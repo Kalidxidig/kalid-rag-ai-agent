@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     openai_embed_model: str = Field(default="text-embedding-3-small", env="OPENAI_EMBED_MODEL")
     openai_chat_model: str = Field(default="gpt-4o", env="OPENAI_CHAT_MODEL")
 
-    
+    # OpenRouter Configuration
+    openrouter_api_key: str = Field(default="", env="OPENROUTER_API_KEY")
     
     # Anthropic Configuration
     anthropic_api_key: str = Field(default="", env="ANTHROPIC_API_KEY")
@@ -43,7 +44,7 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=400)  # Approximate tokens
     chunk_overlap: int = Field(default=60)  # 15% overlap
     temperature: float = Field(default=0.1)
-    embedding_dimensions: int = Field(default=384)  # text-embedding-3-small dimensions
+    embedding_dimensions: int = Field(default=1536)  # text-embedding-3-small dimensions
     
     class Config:
         """Pydantic configuration."""

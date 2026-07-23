@@ -25,9 +25,10 @@ class ChatService:
         
         if self.provider == "openai":
             self.client = openai.OpenAI(
-                api_key=settings.openai_api_key,
+                api_key=settings.openrouter_api_key,
                 base_url="https://openrouter.ai/api/v1"
-    )
+)
+    
             self.model = settings.openai_chat_model
         elif self.provider == "anthropic":
             self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)

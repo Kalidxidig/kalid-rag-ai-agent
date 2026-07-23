@@ -1,16 +1,17 @@
 import logging
 from typing import List
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
+from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    """Local embedding service using Sentence Transformers."""
+    """OpenAI embedding service."""
 
     def __init__(self):
-        self.model = SentenceTransformer(
-            "all-MiniLM-L6-v2"
+        self.client = OpenAI(
+            api_key=settings.openai_api_key
         )
 
     async def embed_texts(
@@ -18,18 +19,22 @@ class EmbeddingService:
     ) -> List[List[float]]:
 
         try:
-            embeddings = self.model.encode(
-                texts,
-                normalize_embeddings=True
+            response = self.client.embeddings.create(
+                model="text-embedding-3-small",
+                input=texts
             )
 
-            return embeddings.tolist()
+            return [
+                item.embedding
+                for item in response.data
+            ]
 
         except Exception as e:
             logger.error(
                 f"Failed to generate embeddings: {e}"
             )
             raise
+
 
     async def embed_query(
         self, query: str
