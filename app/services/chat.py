@@ -86,6 +86,7 @@ class ChatService:
 
         try:
             if self.provider == "openai":
+                logger.info(f"SENDING MODEL TO API: {self.model}")
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
