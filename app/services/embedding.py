@@ -8,16 +8,16 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-
 class EmbeddingService:
     """OpenAI embedding service."""
 
     def __init__(self):
         self.client = AsyncOpenAI(
-            api_key=settings.openai_api_key
+            api_key=settings.openai_api_key,
+            base_url="https://openrouter.ai/api/v1"
         )
-        self.model = settings.openai_embed_model
 
+        self.model = settings.openai_embed_model
 
     async def embed_texts(
         self,
