@@ -10,6 +10,7 @@ import logging
 from typing import List, Dict, Any
 import openai
 import anthropic
+from google import genai
 from ..core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -25,14 +26,22 @@ class ChatService:
         
         if self.provider == "openai":
             self.client = openai.OpenAI(
-                api_key=settings.openrouter_api_key,
-                base_url="https://openrouter.ai/api/v1"
-)
-    
+            api_key=settings.openai_api_key,
+            base_url="https://openrouter.ai/api/v1"
+        )
             self.model = settings.openai_chat_model
+
         elif self.provider == "anthropic":
-            self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            self.client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key
+        )
             self.model = settings.anthropic_chat_model
+
+        elif self.provider == "gemini":
+            self.client = genai.Client(
+            api_key=settings.gemini_api_key
+         )
+            self.model = settings.gemini_chat_model
         else:
             raise ValueError(f"Unsupported AI provider: {self.provider}")
         
@@ -86,6 +95,7 @@ class ChatService:
                     temperature=settings.temperature,
                     max_tokens=1000
                 )
+
                 answer = response.choices[0].message.content
                 
             elif self.provider == "anthropic":
@@ -97,6 +107,21 @@ class ChatService:
                     messages=[{"role": "user", "content": user_prompt}]
                 )
                 answer = response.content[0].text
+            elif self.provider == "gemini":
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=f"""
+                    {system_prompt}
+
+                    Context:
+                    {context}
+
+                    Question:
+                    {query}
+                    """
+            )
+
+            answer = response.choices[0].message.content
             
             logger.info(f"Generated answer using {self.provider}")
             return answer or "I couldn't generate an answer."

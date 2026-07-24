@@ -21,12 +21,16 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = Field(..., env="SUPABASE_SERVICE_ROLE_KEY")
     
     # AI Provider Configuration
-    ai_provider: Literal["openai", "anthropic"] = Field(default="openai", env="AI_PROVIDER")
+    ai_provider: Literal["openai", "anthropic", "gemini"] = Field(default="gemini", env="AI_PROVIDER")
     
     # OpenAI Configuration (optional)
     openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
     openai_embed_model: str = Field(default="text-embedding-3-small", env="OPENAI_EMBED_MODEL")
     openai_chat_model: str = Field(default="gpt-4o", env="OPENAI_CHAT_MODEL")
+
+    # Gemini Configuration
+    gemini_api_key: str = Field(default="", env="GEMINI_API_KEY")
+    gemini_chat_model: str = Field(default="gemini-2.0-flash", env="GEMINI_CHAT_MODEL")
 
     # OpenRouter Configuration
     openrouter_api_key: str = Field(default="", env="OPENROUTER_API_KEY")

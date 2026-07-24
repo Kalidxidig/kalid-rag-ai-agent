@@ -9,13 +9,14 @@ Orchestrates the complete RAG pipeline: chunk → embed → search → generate.
 import logging
 import time
 import re
+import os
 from typing import List, Dict, Any, Tuple
+
 from ..core.database import db
 from .embedding import embedding_service
 from .chat import chat_service
 from .chunker import chunker
-from ..data.default_documents import DEFAULT_DOCUMENTS
-
+from ..loaders.pdf_loader import load_pdf
 logger = logging.getLogger(__name__)
 
 
@@ -42,9 +43,33 @@ class RAGService:
         start_time = time.time()
         
         # Use default documents if none provided
+        # Load PDF documents from documents folder if none provided
         if documents is None:
-            documents = DEFAULT_DOCUMENTS
-            logger.info("Using default documents for seeding")
+            documents = []
+
+            documents_folder = "documents"
+
+            for filename in os.listdir(documents_folder):
+                if filename.lower().endswith(".pdf"):
+
+                    path = os.path.join(
+                        documents_folder,
+                        filename
+                    )
+
+                    logger.info(f"Loading PDF: {filename}")
+
+                    text = load_pdf(path)
+
+                    documents.append({
+                        "chunk_id": filename,
+                        "source": filename,
+                        "text": text
+                    })
+
+        logger.info(
+        f"Loaded {len(documents)} PDF documents"
+        )
         
         try:
             # Step 1: Chunk documents
