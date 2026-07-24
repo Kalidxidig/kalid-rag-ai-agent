@@ -9,16 +9,10 @@ class EmbeddingService:
     """Local Sentence Transformer embedding service."""
 
     def __init__(self):
-        self.model = None
-
-    def load_model(self):
-        if self.model is None:
-            logger.info("Loading local embedding model...")
-            self.model = SentenceTransformer(
-                "all-MiniLM-L6-v2"
-            )
-            logger.info("Local embedding model loaded")
-
+        self.model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L6-v2",
+            device="cpu"
+        )
 
     async def embed_texts(
         self,
@@ -26,11 +20,11 @@ class EmbeddingService:
     ) -> List[List[float]]:
 
         try:
-            self.load_model()
-
             embeddings = self.model.encode(
                 texts,
-                normalize_embeddings=True
+                batch_size=8,
+                convert_to_numpy=True,
+                show_progress_bar=False
             )
 
             return embeddings.tolist()
