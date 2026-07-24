@@ -24,3 +24,4 @@ EXPOSE 8080
 # Command to run the application
 # Use PORT environment variable from Cloud Run
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --timeout-keep-alive 0
+
