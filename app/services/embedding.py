@@ -10,6 +10,7 @@ settings = get_settings()
 
 
 class EmbeddingService:
+    """Hugging Face API embedding service."""
 
     def __init__(self):
         self.client = InferenceClient(
@@ -17,6 +18,10 @@ class EmbeddingService:
         )
 
         self.model = "sentence-transformers/all-MiniLM-L6-v2"
+
+        logger.info(
+            f"Embedding service initialized. HF token loaded: {bool(settings.hf_token)}"
+        )
 
 
     async def embed_texts(
@@ -38,7 +43,9 @@ class EmbeddingService:
             return embeddings
 
         except Exception as e:
-            logger.error(f"Failed to generate embeddings: {e}")
+            logger.error(
+                f"Failed to generate embeddings: {e}"
+            )
             raise
 
 
