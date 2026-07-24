@@ -1,46 +1,21 @@
-import logging
-from typing import List
 from sentence_transformers import SentenceTransformer
 
-logger = logging.getLogger(__name__)
-
-
 class EmbeddingService:
-    """Local Sentence Transformer embedding service."""
 
     def __init__(self):
         self.model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2",
-            device="cpu"
+            "sentence-transformers/paraphrase-MiniLM-L3-v2"
         )
 
-    async def embed_texts(
-        self,
-        texts: List[str]
-    ) -> List[List[float]]:
+    async def embed_texts(self, texts):
+        embeddings = self.model.encode(
+            texts,
+            convert_to_numpy=True,
+            batch_size=8
+        )
+        return embeddings.tolist()
 
-        try:
-            embeddings = self.model.encode(
-                texts,
-                batch_size=8,
-                convert_to_numpy=True,
-                show_progress_bar=False
-            )
-
-            return embeddings.tolist()
-
-        except Exception as e:
-            logger.error(
-                f"Failed to generate embeddings: {e}"
-            )
-            raise
-
-
-    async def embed_query(
-        self,
-        query: str
-    ) -> List[float]:
-
+    async def embed_query(self, query):
         embeddings = await self.embed_texts([query])
         return embeddings[0]
 
