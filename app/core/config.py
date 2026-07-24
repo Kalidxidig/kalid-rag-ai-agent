@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     
     # AI Provider Configuration
     ai_provider: Literal["openai", "anthropic", "gemini"] = Field(default="gemini", env="AI_PROVIDER")
+
+    hf_token: str = Field(default="", env="HF_TOKEN")
     
     # OpenAI Configuration (optional)
     openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
