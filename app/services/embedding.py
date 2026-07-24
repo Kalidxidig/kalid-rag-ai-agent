@@ -1,39 +1,41 @@
 import logging
 from typing import List
-from sentence_transformers import SentenceTransformer
+from openai import AsyncOpenAI
+
+from ..core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
+
 
 class EmbeddingService:
-    """Local Sentence Transformer embedding service."""
+    """OpenAI embedding service."""
 
     def __init__(self):
-        self.model = None
-
-    def load_model(self):
-        """Load model only when needed."""
-        if self.model is None:
-            logger.info("Loading embedding model...")
-            self.model = SentenceTransformer(
-                "all-MiniLM-L6-v2"
-            )
-            logger.info("Embedding model loaded")
+        self.client = AsyncOpenAI(
+            api_key=settings.openai_api_key
+        )
+        self.model = settings.openai_embed_model
 
 
     async def embed_texts(
-        self, texts: List[str]
+        self,
+        texts: List[str]
     ) -> List[List[float]]:
 
         try:
-            self.load_model()
-
-            embeddings = self.model.encode(
-                texts,
-                normalize_embeddings=True
+            response = await self.client.embeddings.create(
+                model=self.model,
+                input=texts
             )
 
-            return embeddings.tolist()
+            embeddings = [
+                item.embedding
+                for item in response.data
+            ]
+
+            return embeddings
 
         except Exception as e:
             logger.error(
@@ -43,7 +45,8 @@ class EmbeddingService:
 
 
     async def embed_query(
-        self, query: str
+        self,
+        query: str
     ) -> List[float]:
 
         embeddings = await self.embed_texts([query])
