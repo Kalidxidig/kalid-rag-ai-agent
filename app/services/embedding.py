@@ -13,8 +13,7 @@ class EmbeddingService:
 
     def __init__(self):
         self.client = AsyncOpenAI(
-            api_key=settings.openai_api_key,
-            base_url="https://openrouter.ai/api/v1"
+            api_key=settings.openai_api_key
         )
 
         self.model = settings.openai_embed_model
