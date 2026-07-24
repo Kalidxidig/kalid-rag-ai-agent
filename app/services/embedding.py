@@ -1,21 +1,52 @@
-from sentence_transformers import SentenceTransformer
+import logging
+from typing import List
+from huggingface_hub import InferenceClient
+
+from ..core.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+settings = get_settings()
+
 
 class EmbeddingService:
 
     def __init__(self):
-        self.model = SentenceTransformer(
-            "sentence-transformers/paraphrase-MiniLM-L3-v2"
+        self.client = InferenceClient(
+            token=settings.hf_token
         )
 
-    async def embed_texts(self, texts):
-        embeddings = self.model.encode(
-            texts,
-            convert_to_numpy=True,
-            batch_size=8
-        )
-        return embeddings.tolist()
+        self.model = "sentence-transformers/all-MiniLM-L6-v2"
 
-    async def embed_query(self, query):
+
+    async def embed_texts(
+        self,
+        texts: List[str]
+    ) -> List[List[float]]:
+
+        try:
+            embeddings = []
+
+            for text in texts:
+                result = self.client.feature_extraction(
+                    text,
+                    model=self.model
+                )
+
+                embeddings.append(result.tolist())
+
+            return embeddings
+
+        except Exception as e:
+            logger.error(f"Failed to generate embeddings: {e}")
+            raise
+
+
+    async def embed_query(
+        self,
+        query: str
+    ) -> List[float]:
+
         embeddings = await self.embed_texts([query])
         return embeddings[0]
 
