@@ -18,7 +18,7 @@ from .core.database import db
 from .models.requests import SeedRequest, AnswerRequest
 from .models.responses import SeedResponse, AnswerResponse, HealthResponse, ErrorResponse
 from .services.rag import rag_service
-from .data.default_documents import DEFAULT_DOCUMENTS
+
 
 # Configure logging
 logging.basicConfig(
@@ -148,12 +148,13 @@ async def health_check():
 @app.get("/documents", tags=["General"])
 async def get_documents():
     """
-    Get the default documents used for seeding the knowledge base.
-    
-    Returns:
-        List of default documents with their chunk_id, source, and text
+    Documents endpoint disabled for security.
     """
-    return {"documents": DEFAULT_DOCUMENTS}
+
+    raise HTTPException(
+        status_code=403,
+        detail="Documents access is restricted."
+    )
 
 
 @app.post("/seed", response_model=SeedResponse, tags=["RAG"])
