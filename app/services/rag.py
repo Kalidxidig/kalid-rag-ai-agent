@@ -156,7 +156,7 @@ class RAGService:
         try:
 
 
-            history = self.memory.get_history(
+            history = await self.memory.get_history(
                 conversation_id
             )
 
@@ -209,14 +209,14 @@ class RAGService:
             )
 
 
-            self.memory.add_message(
+            await self.memory.add_message(
                 conversation_id,
                 "user",
                 query
             )
 
 
-            self.memory.add_message(
+            await self.memory.add_message(
                 conversation_id,
                 "assistant",
                 answer_text

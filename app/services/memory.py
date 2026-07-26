@@ -1,59 +1,74 @@
 """
-Simple conversation memory storage for Xidig AI Assistant.
-Stores temporary chat history per conversation.
+Persistent conversation memory for Xidig AI Assistant.
+Stores chat history in Supabase database.
 """
 
-from typing import Dict, List
+from typing import List, Dict
+
+from ..core.database import db
 
 
 class ConversationMemory:
     """
-    In-memory conversation storage.
+    Database-backed conversation storage.
     """
 
-    def __init__(self):
-        self.sessions: Dict[str, List[Dict[str, str]]] = {}
 
-
-    def get_history(
+    async def get_history(
         self,
         conversation_id: str
     ) -> List[Dict[str, str]]:
 
-        return self.sessions.get(
-            conversation_id,
-            []
-        )
+
+        result = await db.client.table(
+            "conversation_messages"
+        ).select(
+            "role, content"
+        ).eq(
+            "conversation_id",
+            conversation_id
+        ).order(
+            "created_at"
+        ).execute()
 
 
-    def add_message(
+        return result.data or []
+
+
+
+    async def add_message(
         self,
         conversation_id: str,
         role: str,
         content: str
     ):
 
-        if conversation_id not in self.sessions:
-            self.sessions[conversation_id] = []
 
-
-        self.sessions[conversation_id].append(
+        await db.client.table(
+            "conversation_messages"
+        ).insert(
             {
+                "conversation_id": conversation_id,
                 "role": role,
                 "content": content
             }
-        )
+        ).execute()
 
 
-    def clear_history(
+
+    async def clear_history(
         self,
         conversation_id: str
     ):
 
-        if conversation_id in self.sessions:
-            del self.sessions[conversation_id]
+
+        await db.client.table(
+            "conversation_messages"
+        ).delete().eq(
+            "conversation_id",
+            conversation_id
+        ).execute()
 
 
 
-# Global memory instance
 conversation_memory = ConversationMemory()
