@@ -303,50 +303,44 @@ class RAGService:
 
 
     def _extract_citations(
-    self,
-    answer_text: str,
-    context_blocks: List[Dict[str, Any]]
-) -> List[str]:
-    """
-    Extract source citations from generated answer.
-    Supports [chunk_id] format and automatically adds used sources.
-    """
+        self,
+        answer_text: str,
+        context_blocks: List[Dict[str, Any]]
+    ) -> List[str]:
+        """
+        Extract source citations from generated answer.
+        Supports [chunk_id] format and automatically adds used sources.
+        """
 
-    citations = []
+        citations = []
 
-    # 1. Check explicit citations from AI response
-    pattern = r"\[([^\]]+)\]"
+        pattern = r"\[([^\]]+)\]"
 
-    found = re.findall(
-        pattern,
-        answer_text
-    )
+        found = re.findall(
+            pattern,
+            answer_text
+        )
 
-    valid_ids = {
-        block["chunk_id"]
-        for block in context_blocks
-    }
+        valid_ids = {
+            block["chunk_id"]
+            for block in context_blocks
+        }
 
-    for cite in found:
-        if cite in valid_ids and cite not in citations:
-            citations.append(cite)
+        for cite in found:
+            if cite in valid_ids and cite not in citations:
+                citations.append(cite)
 
+        if not citations:
+            for block in context_blocks:
+                source = block.get(
+                    "source",
+                    block.get("chunk_id", "unknown")
+                )
 
-    # 2. If AI does not include citations,
-    # use retrieved context sources automatically
-    if not citations:
-        for block in context_blocks:
-            source = block.get(
-                "source",
-                block.get("chunk_id", "unknown")
-            )
+                if source not in citations:
+                    citations.append(source)
 
-            if source not in citations:
-                citations.append(source)
-
-
-    return citations
-
+        return citations
 
 
     def _extract_sources(
