@@ -36,7 +36,7 @@ class AnswerRequest(BaseModel):
         description="Number of chunks to retrieve for context"
     )
 
-    conversation_id: str = Field(
-        default="default",
+    conversation_id: Optional[str] = Field(
+        None,
         description="Conversation identifier for memory"
     )

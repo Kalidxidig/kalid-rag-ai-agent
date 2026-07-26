@@ -5,7 +5,7 @@
 FastAPI application for RAG (Retrieval-Augmented Generation) backend.
 Provides endpoints for document seeding and question answering with citations.
 """
-
+import uuid
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
@@ -208,6 +208,9 @@ async def answer_question(request: AnswerRequest):
     """
     try:
         logger.info(f"Processing query: '{request.query[:100]}...'")
+
+        if not request.conversation_id:
+            request.conversation_id = str(uuid.uuid4())
         
         # Process query through RAG pipeline
         result = await rag_service.answer_query(
