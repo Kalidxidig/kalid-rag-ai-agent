@@ -31,7 +31,7 @@ class QueryRewriter:
 
         conversation = ""
 
-        for message in history:
+        for message in history[-6:]:
 
             role = message.get(
                 "role",
@@ -60,8 +60,14 @@ Current question:
 
 
 Rewrite the current question into a standalone question.
-Keep the original meaning.
-If the question is already clear, return it unchanged.
+
+Rules:
+- Resolve pronouns like "they", "them", "their", "it", "this", "that" using the conversation history.
+- Include important names, documents, topics, and entities from previous messages.
+- Do not remove important context.
+- If the question is already clear, return it unchanged.
+
+Return ONLY the rewritten question.
 
 Standalone question:
 """
@@ -73,7 +79,17 @@ Standalone question:
                 prompt
             )
 
-            return rewritten.strip()
+            rewritten = rewritten.strip()
+
+            logger.info(
+                f"Original query: {query}"
+            )
+
+            logger.info(
+                f"Rewritten query: {rewritten}"
+            )
+
+            return rewritten
 
 
         except Exception as e:
