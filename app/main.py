@@ -212,7 +212,8 @@ async def answer_question(request: AnswerRequest):
         # Process query through RAG pipeline
         result = await rag_service.answer_query(
             query=request.query,
-            top_k=request.top_k
+            top_k=request.top_k,
+            conversation_id=request.conversation_id
         )
         
         # Convert to response model

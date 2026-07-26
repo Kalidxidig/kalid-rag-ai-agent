@@ -16,6 +16,7 @@ from ..core.database import db
 from .embedding import embedding_service
 from .chat import chat_service
 from .chunker import chunker
+from .memory import conversation_memory
 from ..loaders.pdf_loader import load_pdf
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class RAGService:
         self.embedding_service = embedding_service
         self.chat_service = chat_service
         self.chunker = chunker
+        self.memory = conversation_memory
 
 
     async def seed_documents(
@@ -142,7 +144,8 @@ class RAGService:
     async def answer_query(
         self,
         query: str,
-        top_k: int = 6
+        top_k: int = 6,
+        conversation_id: str = "default"
     ) -> Dict[str, Any]:
 
         start_time = time.time()
@@ -186,10 +189,30 @@ class RAGService:
                 search_results
             )
 
+            
+            history = self.memory.get_history(
+                conversation_id
+            )
+
 
             answer_text = await self.chat_service.generate_answer(
                 query,
-                context_blocks
+                context_blocks,
+                history
+            )
+
+
+            self.memory.add_message(
+                conversation_id,
+                "user",
+                query
+            )
+
+
+            self.memory.add_message(
+                conversation_id,
+                "assistant",
+                answer_text
             )
 
 

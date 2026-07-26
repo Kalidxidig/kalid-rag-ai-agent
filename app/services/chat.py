@@ -80,7 +80,8 @@ class ChatService:
     async def generate_answer(
         self,
         query: str,
-        context_blocks: List[Dict[str, Any]]
+        context_blocks: List[Dict[str, Any]],
+        conversation_history: List[Dict[str, str]] = None
     ) -> str:
 
 
@@ -107,32 +108,64 @@ class ChatService:
 
 
 
+        history_text = ""
+
+        if conversation_history:
+
+            history_parts = []
+
+            for message in conversation_history:
+
+                role = message.get(
+                    "role",
+                    "user"
+                )
+
+                content = message.get(
+                    "content",
+                    ""
+                )
+
+                history_parts.append(
+                    f"{role}: {content}"
+                )
+
+
+            history_text = "\n\n".join(history_parts)
+
+
+
         system_prompt = """
-You are a helpful customer support AI assistant.
+You are Xidig AI Assistant.
 
 Rules:
-1. Answer using provided context.
-2. Include citations like [chunk_id].
-3. Be concise and professional.
-4. If information is missing, say you do not know.
+1. Answer using the provided context.
+2. Use conversation history to understand follow-up questions.
+3. Include citations like [chunk_id].
+4. Be concise and professional.
+5. If information is missing, say you do not know.
 """
 
 
 
         user_prompt = f"""
-Context:
+Previous Conversation:
+
+{history_text}
+
+
+Current Context:
 
 {context}
 
 
-Question:
+Current Question:
 
 {query}
 
 
-Answer using the context above.
+Answer using the context and previous conversation.
 """
-
 
 
         try:
