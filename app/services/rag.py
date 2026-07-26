@@ -303,36 +303,49 @@ class RAGService:
 
 
     def _extract_citations(
-        self,
-        answer_text: str,
-        context_blocks: List[Dict[str, Any]]
-    ) -> List[str]:
+    self,
+    answer_text: str,
+    context_blocks: List[Dict[str, Any]]
+) -> List[str]:
+    """
+    Extract source citations from generated answer.
+    Supports [chunk_id] format and automatically adds used sources.
+    """
+
+    citations = []
+
+    # 1. Check explicit citations from AI response
+    pattern = r"\[([^\]]+)\]"
+
+    found = re.findall(
+        pattern,
+        answer_text
+    )
+
+    valid_ids = {
+        block["chunk_id"]
+        for block in context_blocks
+    }
+
+    for cite in found:
+        if cite in valid_ids and cite not in citations:
+            citations.append(cite)
 
 
-        pattern = r"\[([^\]]+)\]"
-
-
-        found = re.findall(
-            pattern,
-            answer_text
-        )
-
-
-        valid_ids = {
-            block["chunk_id"]
-            for block in context_blocks
-        }
-
-
-        return list(
-            dict.fromkeys(
-                [
-                    cite
-                    for cite in found
-                    if cite in valid_ids
-                ]
+    # 2. If AI does not include citations,
+    # use retrieved context sources automatically
+    if not citations:
+        for block in context_blocks:
+            source = block.get(
+                "source",
+                block.get("chunk_id", "unknown")
             )
-        )
+
+            if source not in citations:
+                citations.append(source)
+
+
+    return citations
 
 
 
