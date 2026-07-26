@@ -16,6 +16,7 @@ from ..core.database import db
 from .embedding import embedding_service
 from .chat import chat_service
 from .chunker import chunker
+from .query_rewriter import query_rewriter
 from .memory import conversation_memory
 from ..loaders.pdf_loader import load_pdf
 
@@ -31,6 +32,7 @@ class RAGService:
         self.chat_service = chat_service
         self.chunker = chunker
         self.memory = conversation_memory
+        self.query_rewriter = query_rewriter
 
 
     async def seed_documents(
@@ -153,8 +155,13 @@ class RAGService:
 
         try:
 
-            query_embedding = await self.embedding_service.embed_query(
+
+            rewritten_query = await self.query_rewriter.rewrite(
                 query
+            )
+
+            query_embedding = await self.embedding_service.embed_query(
+                rewritten_query
             )
 
 
