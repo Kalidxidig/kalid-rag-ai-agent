@@ -10,46 +10,44 @@ import logging
 import time
 import re
 import os
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 from ..core.database import db
 from .embedding import embedding_service
 from .chat import chat_service
 from .chunker import chunker
 from ..loaders.pdf_loader import load_pdf
+
 logger = logging.getLogger(__name__)
 
 
 class RAGService:
     """Main RAG service orchestrating the complete pipeline."""
-    
+
     def __init__(self):
-        """Initialize RAG service."""
         self.db = db
         self.embedding_service = embedding_service
         self.chat_service = chat_service
         self.chunker = chunker
-    
-    async def seed_documents(self, documents: List[Dict[str, str]] = None) -> int:
-        """
-        Seed the knowledge base with documents.
-        
-        Args:
-            documents: Optional list of documents. If None, uses default documents.
-            
-        Returns:
-            Number of chunks successfully inserted
-        """
+
+
+    async def seed_documents(
+        self,
+        documents: List[Dict[str, str]] = None
+    ) -> int:
+
         start_time = time.time()
-        
-        # Use default documents if none provided
-        # Load PDF documents from documents folder if none provided
+
+
         if documents is None:
+
             documents = []
 
             documents_folder = "documents"
 
+
             for filename in os.listdir(documents_folder):
+
                 if filename.lower().endswith(".pdf"):
 
                     path = os.path.join(
@@ -57,167 +55,323 @@ class RAGService:
                         filename
                     )
 
-                    logger.info(f"Loading PDF: {filename}")
+                    logger.info(
+                        f"Loading PDF: {filename}"
+                    )
 
-                    text = load_pdf(path)
 
-                    documents.append({
-                        "chunk_id": filename,
-                        "source": filename,
-                        "text": text
-                    })
+                    pages = load_pdf(path)
+
+
+                    for page in pages:
+
+                        documents.append(
+                            {
+                                "chunk_id": f"{filename}_page_{page['page']}",
+                                "source": filename,
+                                "page": page["page"],
+                                "text": page["text"]
+                            }
+                        )
+
 
         logger.info(
-        f"Loaded {len(documents)} PDF documents"
+            f"Loaded {len(documents)} document sections"
         )
-        
+
+
         try:
-            # Step 1: Chunk documents
-            chunks = self.chunker.chunk_documents(documents)
-            logger.info(f"Created {len(chunks)} chunks from {len(documents)} documents")
-            
-            # Step 2: Generate embeddings for all chunks
-            texts = [chunk['text'] for chunk in chunks]
-            embeddings = await self.embedding_service.embed_texts(texts)
-            
-            # Step 3: Combine chunks with embeddings
-            for chunk, embedding in zip(chunks, embeddings):
-                chunk['embedding'] = embedding
-            
-            # Step 4: Store in database
-            inserted_count = await self.db.upsert_chunks(chunks)
-            
-            elapsed_ms = int((time.time() - start_time) * 1000)
-            logger.info(f"Seeding completed in {elapsed_ms}ms: {inserted_count} chunks inserted")
-            
+
+            chunks = self.chunker.chunk_documents(
+                documents
+            )
+
+
+            logger.info(
+                f"Created {len(chunks)} chunks"
+            )
+
+
+            texts = [
+                chunk["text"]
+                for chunk in chunks
+            ]
+
+
+            embeddings = await self.embedding_service.embed_texts(
+                texts
+            )
+
+
+            for chunk, embedding in zip(
+                chunks,
+                embeddings
+            ):
+
+                chunk["embedding"] = embedding
+
+
+            inserted_count = await self.db.upsert_chunks(
+                chunks
+            )
+
+
+            elapsed_ms = int(
+                (time.time() - start_time) * 1000
+            )
+
+
+            logger.info(
+                f"Seeding completed in {elapsed_ms}ms"
+            )
+
+
             return inserted_count
-            
+
+
         except Exception as e:
-            logger.error(f"Seeding failed: {e}")
+
+            logger.error(
+                f"Seeding failed: {e}"
+            )
+
             raise
-    
-    async def answer_query(self, query: str, top_k: int = 6) -> Dict[str, Any]:
-        """
-        Process a query through the complete RAG pipeline.
-        
-        Args:
-            query: User's question
-            top_k: Number of chunks to retrieve
-            
-        Returns:
-            Dictionary with answer, citations, and debug info
-        """
+
+
+
+    async def answer_query(
+        self,
+        query: str,
+        top_k: int = 6
+    ) -> Dict[str, Any]:
+
         start_time = time.time()
-        
+
+
         try:
-            # Step 1: Generate query embedding
-            query_embedding = await self.embedding_service.embed_query(query)
-            
-            # Step 2: Vector similarity search
-            search_results = await self.db.vector_search(query_embedding, top_k)
-            
+
+            query_embedding = await self.embedding_service.embed_query(
+                query
+            )
+
+
+            search_results = await self.db.vector_search(
+                query_embedding,
+                top_k
+            )
+
+
             if not search_results:
+
                 return {
-                    'text': "I don't have enough information to answer your question. Could you please rephrase or provide more context?",
-                    'citations': [],
-                    'debug': {
-                        'top_doc_ids': [],
-                        'latency_ms': int((time.time() - start_time) * 1000)
+
+                    "text":
+                    "I don't have enough information to answer this question.",
+
+                    "citations": [],
+
+                    "debug":
+                    {
+                        "top_doc_ids": [],
+                        "latency_ms":
+                        int(
+                            (time.time() - start_time) * 1000
+                        )
                     }
                 }
-            
-            # Step 3: Deduplicate and prepare context
-            context_blocks = self._prepare_context(search_results)
-            
-            # Step 4: Generate answer
-            answer_text = await self.chat_service.generate_answer(query, context_blocks)
-            
-            # Step 5: Extract citations from answer
-            citations = self._extract_citations(answer_text, context_blocks)
-            
-            elapsed_ms = int((time.time() - start_time) * 1000)
-            
-            result = {
-                'text': answer_text,
-                'citations': citations,
-                'debug': {
-                    'top_doc_ids': [block['chunk_id'] for block in context_blocks],
-                    'latency_ms': elapsed_ms
-                }
-            }
-            
-            logger.info(f"Query processed in {elapsed_ms}ms with {len(citations)} citations")
-            return result
-            
-        except Exception as e:
-            logger.error(f"Query processing failed: {e}")
+
+
+
+            context_blocks = self._prepare_context(
+                search_results
+            )
+
+
+            answer_text = await self.chat_service.generate_answer(
+                query,
+                context_blocks
+            )
+
+
+            citations = self._extract_citations(
+                answer_text,
+                context_blocks
+            )
+
+
+            elapsed_ms = int(
+                (time.time() - start_time) * 1000
+            )
+
+
             return {
-                'text': f"I encountered an error while processing your question: {str(e)}",
-                'citations': [],
-                'debug': {
-                    'top_doc_ids': [],
-                    'latency_ms': int((time.time() - start_time) * 1000)
+
+                "text": answer_text,
+
+                "citations": citations,
+
+                "sources": self._extract_sources(
+                    context_blocks
+                ),
+
+                "debug":
+                {
+                    "top_doc_ids":
+                    [
+                        block["chunk_id"]
+                        for block in context_blocks
+                    ],
+
+                    "latency_ms": elapsed_ms
                 }
             }
-    
-    def _prepare_context(self, search_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Prepare context blocks from search results with simple deduplication.
-        
-        Args:
-            search_results: Raw search results from database
-            
-        Returns:
-            Processed context blocks
-        """
-        # Simple deduplication by chunk_id prefix (MMR-lite)
+
+
+
+        except Exception as e:
+
+            logger.error(
+                f"Query processing failed: {e}"
+            )
+
+
+            return {
+
+                "text":
+                "Sorry, I couldn't process your request right now. Please try again later.",
+
+                "citations": [],
+
+                "sources": [],
+
+                "debug":
+                {
+                    "top_doc_ids": [],
+                    "latency_ms":
+                    int(
+                        (time.time() - start_time) * 1000
+                    )
+                }
+            }
+
+
+
+    def _prepare_context(
+        self,
+        search_results: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+
+
         seen_prefixes = set()
+
         context_blocks = []
-        
+
+
         for result in search_results:
-            chunk_id = result.get('chunk_id', '')
-            
-            # Extract base chunk ID (before #)
-            base_id = chunk_id.split('#')[0] if '#' in chunk_id else chunk_id
-            
+
+
+            chunk_id = result.get(
+                "chunk_id",
+                ""
+            )
+
+
+            base_id = (
+                chunk_id.split("#")[0]
+                if "#" in chunk_id
+                else chunk_id
+            )
+
+
             if base_id not in seen_prefixes:
-                context_blocks.append(result)
-                seen_prefixes.add(base_id)
-            
-            # Limit to reasonable context size
+
+                context_blocks.append(
+                    result
+                )
+
+                seen_prefixes.add(
+                    base_id
+                )
+
+
             if len(context_blocks) >= 4:
                 break
-        
-        logger.info(f"Prepared {len(context_blocks)} unique context blocks")
+
+
         return context_blocks
-    
-    def _extract_citations(self, answer_text: str, context_blocks: List[Dict[str, Any]]) -> List[str]:
-        """
-        Extract citation chunk_ids from the generated answer.
-        
-        Args:
-            answer_text: Generated answer text
-            context_blocks: Context blocks that were provided
-            
-        Returns:
-            List of chunk_ids that were cited
-        """
-        # Find all citations in format [chunk_id]
-        citation_pattern = r'\[([^\]]+)\]'
-        found_citations = re.findall(citation_pattern, answer_text)
-        
-        # Filter to only include valid chunk_ids from context
-        valid_chunk_ids = {block['chunk_id'] for block in context_blocks}
-        valid_citations = [cite for cite in found_citations if cite in valid_chunk_ids]
-        
-        # Remove duplicates while preserving order
-        unique_citations = []
-        for cite in valid_citations:
-            if cite not in unique_citations:
-                unique_citations.append(cite)
-        
-        return unique_citations
 
 
-# Global RAG service instance
+
+    def _extract_citations(
+        self,
+        answer_text: str,
+        context_blocks: List[Dict[str, Any]]
+    ) -> List[str]:
+
+
+        pattern = r"\[([^\]]+)\]"
+
+
+        found = re.findall(
+            pattern,
+            answer_text
+        )
+
+
+        valid_ids = {
+            block["chunk_id"]
+            for block in context_blocks
+        }
+
+
+        return list(
+            dict.fromkeys(
+                [
+                    cite
+                    for cite in found
+                    if cite in valid_ids
+                ]
+            )
+        )
+
+
+
+    def _extract_sources(
+        self,
+        context_blocks: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+
+
+        sources = []
+
+
+        for block in context_blocks:
+
+            sources.append(
+                {
+                    "file":
+                    block.get(
+                        "source",
+                        "unknown"
+                    ),
+
+                    "page":
+                    block.get(
+                        "page",
+                        None
+                    ),
+
+                    "chunk_id":
+                    block.get(
+                        "chunk_id",
+                        "unknown"
+                    )
+                }
+            )
+
+
+        return sources
+
+
+
 rag_service = RAGService()

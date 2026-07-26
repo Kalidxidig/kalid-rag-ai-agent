@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support — AI Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #16211c;
+    --ink-soft: #4b5750;
+    --paper: #f7f5f0;
+    --panel: #ffffff;
+    --line: #e3e0d6;
+    --teal: #0f6e5d;
+    --teal-dim: #e6efec;
+    --amber: #c8862a;
+    --radius: 14px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(15,110,93,0.06), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(200,134,42,0.05), transparent 40%);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 620px;
+    height: 84vh;
+    max-height: 760px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px rgba(22,33,28,0.04), 0 20px 44px -20px rgba(22,33,28,0.22);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .header {
+    padding: 22px 26px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    flex-shrink: 0;
+  }
+
+  .dot.live {
+    background: var(--teal);
+    animation: pulse 2.2s infinite;
+  }
+
+  .dot.warn { background: var(--amber); }
+  .dot.down { background: #b3463a; }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(15,110,93,0.45); }
+    70%  { box-shadow: 0 0 0 7px rgba(15,110,93,0); }
+    100% { box-shadow: 0 0 0 0 rgba(15,110,93,0); }
+  }
+
+  .header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 23px;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+
+  .header p {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--paper);
+  }
+
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    animation: rise 0.28s ease;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .row.user { flex-direction: row-reverse; }
+
+  .mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .row.bot .mark {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .row.user .mark {
+    background: var(--teal-dim);
+    color: var(--teal);
+    border: 1px solid #cfe3dd;
+  }
+
+  .bubble {
+    max-width: 76%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  .row.bot .bubble {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 4px;
+  }
+
+  .row.user .bubble {
+    background: var(--ink);
+    color: var(--paper);
+    border-bottom-right-radius: 4px;
+  }
+
+  .sources {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  .typing { display: none; }
+  .typing.show { display: flex; }
+
+  .typing-dots {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px 2px;
+  }
+
+  .typing-dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .composer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    gap: 10px;
+  }
+
+  .composer input {
+    flex: 1;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .composer input::placeholder { color: #9a9488; }
+
+  .composer input:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(15,110,93,0.12);
+  }
+
+  .composer button {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .composer button:hover { background: var(--teal); }
+  .composer button:active { transform: scale(0.97); }
+  .composer button:disabled { background: #c7c2b6; cursor: not-allowed; }
+
+  .composer button:focus-visible,
+  .composer input:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 640px) {
+    .card { height: 92vh; border-radius: 10px; }
+    .bubble { max-width: 86%; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <div class="eyebrow"><span class="dot" id="statusDot"></span><span id="statusText">Connecting</span></div>
+      <h1>Customer Support</h1>
+      <p>Ask about orders, returns, and policies — answered from our knowledge base.</p>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="row bot">
+        <div class="mark">AI</div>
+        <div class="bubble">
+          Welcome. I can help with policy questions, order status, returns, and shipping — ask me anything.
+        </div>
+      </div>
+    </div>
+
+    <div class="row bot typing" id="typing">
+      <div class="mark">AI</div>
+      <div class="bubble">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <input id="messageInput" type="text" placeholder="Ask a question…" maxlength="500" autocomplete="off">
+      <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+<script>
+  const API_BASE_URL = window.location.origin;
+  const messagesEl = document.getElementById('messages');
+  const input = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const typingEl = document.getElementById('typing');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+
+  init();
+
+  async function init() {
+    await checkHealth();
+    input.focus();
+  }
+
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  async function checkHealth() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/healthz`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (data.database_connected) {
+        setStatus('live', 'System ready');
+      } else {
+        setStatus('warn', 'Database issue');
+      }
+    } catch {
+      setStatus('down', 'Offline');
+    }
+  }
+
+  function setStatus(state, label) {
+    statusDot.className = 'dot ' + state;
+    statusText.textContent = label;
+  }
+
+  function addMessage(text, isUser, sources = []) {
+    const row = document.createElement('div');
+    row.className = 'row ' + (isUser ? 'user' : 'bot');
+
+    const mark = document.createElement('div');
+    mark.className = 'mark';
+    mark.textContent = isUser ? 'YOU' : 'AI';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = text.replace(/\n/g, '<br>');
+
+    if (sources.length) {
+      const src = document.createElement('div');
+      src.className = 'sources';
+      src.textContent = 'Source: ' + sources.join(', ');
+      bubble.appendChild(src);
+    }
+
+    row.appendChild(mark);
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showTyping(show) {
+    typingEl.classList.toggle('show', show);
+    typingEl.style.display = show ? 'flex' : 'none';
+    if (show) messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, true);
+    input.value = '';
+    sendBtn.disabled = true;
+    showTyping(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: text, top_k: 6 })
+      });
+
+      showTyping(false);
+
+      if (res.ok) {
+        const data = await res.json();
+        addMessage(data.text, false, data.citations || []);
+      } else {
+        addMessage('Something went wrong on our end. Please try again in a moment.', false);
+      }
+    } catch {
+      showTyping(false);
+      addMessage('Unable to reach the server. Check your connection and try again.', false);
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+</script>
+</body>
+</html>

@@ -64,6 +64,7 @@
             padding: 20px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            position: relative;
         }
 
         .chat-header h1 {
@@ -176,6 +177,65 @@
             padding: 8px 12px;
             background: rgba(255,255,255,0.3);
             border-radius: 10px;
+        }
+
+        .citation-block {
+            font-size: 12px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            line-height: 1.6;
+        }
+
+        .citation-item {
+            margin-bottom: 6px;
+        }
+
+        .citation-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .confidence-block {
+            font-size: 12px;
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: rgba(16,185,129,0.1);
+            border-radius: 10px;
+            color: var(--text-secondary);
+        }
+
+        .debug-block {
+            display: none;
+            font-size: 11px;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(79,70,229,0.08);
+            border: 1px dashed var(--primary-light);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        body.dev-mode-on .debug-block {
+            display: block;
+        }
+
+        .dev-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .dev-mode-toggle input {
+            cursor: pointer;
         }
 
         .chat-input {
@@ -330,6 +390,10 @@
             <div class="chat-header">
                 <h1>Customer Support</h1>
                 <p>Chat with our AI assistant for help with orders, returns, and policies</p>
+                <label class="dev-mode-toggle">
+                    <input type="checkbox" id="devModeToggle">
+                    <span id="devModeLabel">Developer Mode: OFF</span>
+                </label>
             </div>
             
             <div class="status" id="status">Checking connection...</div>
@@ -379,9 +443,28 @@
         const typingIndicator = document.getElementById('typing');
         const statusDiv = document.getElementById('status');
         const notification = document.getElementById('notification');
+        const devModeToggle = document.getElementById('devModeToggle');
+        const devModeLabel = document.getElementById('devModeLabel');
 
         // Initialize the application
         init();
+
+        // Developer Mode toggle (OFF by default)
+        devModeToggle.addEventListener('change', function() {
+            if (devModeToggle.checked) {
+                document.body.classList.add('dev-mode-on');
+                devModeLabel.textContent = 'Developer Mode: ON';
+            } else {
+                document.body.classList.remove('dev-mode-on');
+                devModeLabel.textContent = 'Developer Mode: OFF';
+            }
+        });
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str === null || str === undefined ? '' : String(str);
+            return div.innerHTML;
+        }
 
         async function init() {
             await checkHealth();
@@ -427,7 +510,7 @@
             }, 4000);
         }
 
-        function addMessage(content, isUser = false, citations = []) {
+        function addMessage(content, isUser = false, citations = [], confidence = null, debug = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
             
@@ -439,11 +522,51 @@
             contentDiv.className = 'message-content';
             contentDiv.innerHTML = content.replace(/\n/g, '<br>');
             
-            if (citations.length > 0) {
+            if (citations && citations.length > 0) {
                 const citationsDiv = document.createElement('div');
-                citationsDiv.className = 'citations';
-                citationsDiv.innerHTML = `📚 Sources: ${citations.join(', ')}`;
+                const isStructured = typeof citations[0] === 'object' && citations[0] !== null;
+
+                if (isStructured) {
+                    // New structured citation format: { source, page, chunk }
+                    citationsDiv.className = 'citation-block';
+                    let html = '';
+                    citations.forEach(c => {
+                        html += '<div class="citation-item">📚 <strong>Source:</strong><br>' + escapeHtml(c.source || 'Unknown');
+                        if (c.page !== undefined && c.page !== null) {
+                            html += '<br><strong>Page:</strong><br>' + escapeHtml(c.page);
+                        }
+                        if (c.chunk !== undefined && c.chunk !== null) {
+                            html += '<br><strong>Chunk:</strong><br>' + escapeHtml(c.chunk);
+                        }
+                        html += '</div>';
+                    });
+                    citationsDiv.innerHTML = html;
+                } else {
+                    // Legacy plain-string citation format, kept for backward compatibility
+                    citationsDiv.className = 'citations';
+                    citationsDiv.innerHTML = `📚 Sources: ${citations.map(c => escapeHtml(c)).join(', ')}`;
+                }
+
                 contentDiv.appendChild(citationsDiv);
+            }
+
+            if (confidence !== null && confidence !== undefined) {
+                const confidenceDiv = document.createElement('div');
+                confidenceDiv.className = 'confidence-block';
+                const pct = Math.round(confidence * 100);
+                confidenceDiv.innerHTML = `🎯 <strong>Confidence:</strong> ${pct}%`;
+                contentDiv.appendChild(confidenceDiv);
+            }
+
+            if (debug && Array.isArray(debug.top_doc_ids) && debug.top_doc_ids.length > 0) {
+                const debugDiv = document.createElement('div');
+                debugDiv.className = 'debug-block';
+                let html = '<strong>Retrieved Chunks:</strong><br>';
+                debug.top_doc_ids.forEach((id, i) => {
+                    html += `${i + 1}. ${escapeHtml(id)}<br>`;
+                });
+                debugDiv.innerHTML = html;
+                contentDiv.appendChild(debugDiv);
             }
             
             if (isUser) {
@@ -490,16 +613,26 @@
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        // Invalid JSON from server
+                        hideTyping();
+                        addMessage('Unable to process your request.\nPlease try again.', false);
+                        return;
+                    }
                     hideTyping();
-                    addMessage(data.text, false, data.citations || []);
+                    addMessage(data.text, false, data.citations || [], data.confidence, data.debug);
                 } else {
+                    // Server-side error
                     hideTyping();
-                    addMessage('Sorry, I encountered an error processing your question. Please try again later. 🔧', false);
+                    addMessage('Unable to process your request.\nPlease try again.', false);
                 }
             } catch (error) {
+                // Network connection failure
                 hideTyping();
-                addMessage('Sorry, I cannot connect to the server. Please make sure it\'s running and try again. 🔌', false);
+                addMessage('Unable to process your request.\nPlease try again.', false);
             } finally {
                 sendBtn.disabled = false;
                 messageInput.focus();
