@@ -17,6 +17,7 @@ from .embedding import embedding_service
 from .chat import chat_service
 from .chunker import chunker
 from .query_rewriter import query_rewriter
+from .keyword_search import keyword_search
 from .memory import conversation_memory
 from ..loaders.pdf_loader import load_pdf
 
@@ -33,6 +34,7 @@ class RAGService:
         self.chunker = chunker
         self.memory = conversation_memory
         self.query_rewriter = query_rewriter
+        self.keyword_search = keyword_search
 
 
     async def seed_documents(
@@ -170,9 +172,21 @@ class RAGService:
             )
 
 
-            search_results = await self.db.vector_search(
+            vector_results = await self.db.vector_search(
                 query_embedding,
                 top_k
+            )
+
+
+            keyword_results = await self.keyword_search.search(
+                rewritten_query,
+                top_k
+            )
+
+
+            search_results = (
+                vector_results 
+                + keyword_results
             )
 
 
