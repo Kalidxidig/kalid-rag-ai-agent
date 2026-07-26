@@ -25,6 +25,10 @@ class AnswerResponse(BaseModel):
     text: str = Field(..., description="Generated answer with inline citations")
     citations: List[str] = Field(..., description="List of chunk IDs used as sources")
     debug: DebugInfo = Field(..., description="Debug information")
+    conversation_id: str = Field(
+    ...,
+    description="Conversation identifier for continuing the session"
+)
 
 
 class HealthResponse(BaseModel):

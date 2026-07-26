@@ -489,6 +489,14 @@
                 const response = await fetch(`${API_BASE_URL}/healthz`);
                 if (response.ok) {
                     const data = await response.json();
+                    if (data.conversation_id) {
+                        console.log("ID received:", data.conversation_id);
+                        console.log("Saving conversation:", data.conversation_id);
+                        localStorage.setItem(
+                            "conversation_id",
+                            data.conversation_id
+                        );
+                    }
                     if (data.database_connected) {
                         statusDiv.textContent = 'System ready';
                         statusDiv.className = 'status connected';
@@ -612,10 +620,9 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        query: message,
-                        top_k: 6,
-                        conversation_id: "customer-session"
-                    })
+                    query: message,
+                    conversation_id: localStorage.getItem("conversation_id")
+                })
                 });
 
                 if (response.ok) {

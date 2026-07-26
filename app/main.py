@@ -223,6 +223,7 @@ async def answer_question(request: AnswerRequest):
         response = AnswerResponse(
             text=result['text'],
             citations=result['citations'],
+            conversation_id=request.conversation_id,
             debug={
                 'top_doc_ids': result['debug']['top_doc_ids'],
                 'latency_ms': result['debug']['latency_ms']
