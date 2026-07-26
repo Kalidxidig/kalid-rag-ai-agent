@@ -19,8 +19,9 @@ class ConversationMemory:
         conversation_id: str
     ) -> List[Dict[str, str]]:
 
+        client = db.get_client(admin=True)
 
-        result = await db.client.table(
+        result = client.table(
             "conversation_messages"
         ).select(
             "role, content"
@@ -43,8 +44,9 @@ class ConversationMemory:
         content: str
     ):
 
+        client = db.get_client(admin=True)
 
-        await db.client.table(
+        client.table(
             "conversation_messages"
         ).insert(
             {
@@ -61,8 +63,9 @@ class ConversationMemory:
         conversation_id: str
     ):
 
+        client = db.get_client(admin=True)
 
-        await db.client.table(
+        client.table(
             "conversation_messages"
         ).delete().eq(
             "conversation_id",
