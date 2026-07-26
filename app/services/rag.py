@@ -156,10 +156,15 @@ class RAGService:
         try:
 
 
-            rewritten_query = await self.query_rewriter.rewrite(
-                query
+            history = self.memory.get_history(
+                conversation_id
             )
 
+
+            rewritten_query = await self.query_rewriter.rewrite(
+                query,
+                history
+            )
             query_embedding = await self.embedding_service.embed_query(
                 rewritten_query
             )
@@ -197,11 +202,6 @@ class RAGService:
             )
 
             
-            history = self.memory.get_history(
-                conversation_id
-            )
-
-
             answer_text = await self.chat_service.generate_answer(
                 query,
                 context_blocks,
