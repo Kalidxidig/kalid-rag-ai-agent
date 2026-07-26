@@ -26,10 +26,15 @@ class SeedRequest(BaseModel):
 
 class AnswerRequest(BaseModel):
     """Request model for the /answer endpoint."""
-    
+
     query: str = Field(
         ...,
         description="User question to answer"
+    )
+
+    conversation_id: Optional[str] = Field(
+        "default",
+        description="Unique conversation identifier"
     )
 
     top_k: Optional[int] = Field(
@@ -37,9 +42,4 @@ class AnswerRequest(BaseModel):
         ge=1,
         le=20,
         description="Number of chunks to retrieve for context"
-    )
-
-    conversation_id: str = Field(
-        "default",
-        description="Unique conversation identifier for memory"
     )
