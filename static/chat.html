@@ -380,10 +380,43 @@
             display: block;
         }
 
-        .dev-mode-toggle {
+        .header-controls {
             position: absolute;
             top: 24px;
             right: 26px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .new-chat-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            letter-spacing: 0.03em;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--hairline-soft);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            color: var(--brass-bright);
+            border-color: var(--brass);
+            background: rgba(201, 162, 75, 0.08);
+        }
+
+        .new-chat-btn svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .dev-mode-toggle {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -393,6 +426,124 @@
             color: var(--text-muted);
             cursor: pointer;
             user-select: none;
+        }
+
+        /* Message action row: copy + feedback */
+        .message-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            opacity: 0.55;
+            transition: opacity 0.2s ease;
+        }
+
+        .message-content:hover .message-actions {
+            opacity: 1;
+        }
+
+        .message-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--hairline-soft);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .message-action-btn:hover {
+            background: rgba(201, 162, 75, 0.12);
+            border-color: var(--brass);
+            color: var(--brass-bright);
+        }
+
+        .message-action-btn.active-up {
+            background: rgba(111, 207, 151, 0.14);
+            border-color: var(--ok);
+            color: var(--ok);
+        }
+
+        .message-action-btn.active-down {
+            background: rgba(226, 102, 95, 0.14);
+            border-color: var(--err);
+            color: var(--err);
+        }
+
+        .message-action-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        /* Suggested question chips */
+        .suggested-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0 24px 16px;
+        }
+
+        .chip-btn {
+            font-family: var(--font-body);
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            background: var(--glass-strong);
+            border: 1px solid var(--hairline-soft);
+            border-radius: 20px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chip-btn:hover {
+            border-color: var(--brass);
+            color: var(--brass-bright);
+            background: rgba(201, 162, 75, 0.08);
+            transform: translateY(-1px);
+        }
+
+        /* Markdown elements inside AI replies */
+        .message-content code {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 5px;
+            color: var(--brass-bright);
+        }
+
+        .message-content pre {
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--hairline);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin: 8px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .message-content a {
+            color: var(--brass-bright);
+            text-decoration: underline;
+            text-decoration-color: var(--brass-dim);
+        }
+
+        .message-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
         }
 
         .dev-mode-toggle input {
@@ -665,13 +816,25 @@
                     <h1>Customer Support</h1>
                     <p>Chat with our AI assistant for help with orders, returns, and policies</p>
                 </div>
-                <label class="dev-mode-toggle">
-                    <input type="checkbox" id="devModeToggle">
-                    <span id="devModeLabel">Developer Mode: OFF</span>
-                </label>
+                <div class="header-controls">
+                    <button class="new-chat-btn" id="newChatBtn" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        New Chat
+                    </button>
+                    <label class="dev-mode-toggle">
+                        <input type="checkbox" id="devModeToggle">
+                        <span id="devModeLabel">Developer Mode: OFF</span>
+                    </label>
+                </div>
             </div>
             
             <div class="status" id="status">Checking connection...</div>
+
+            <div class="suggested-chips" id="suggestedChips">
+                <button class="chip-btn" type="button">What's your return policy?</button>
+                <button class="chip-btn" type="button">How do I track my order?</button>
+                <button class="chip-btn" type="button">What payment methods do you accept?</button>
+            </div>
             
             <div class="chat-messages" id="messages">
                 <div class="message bot">
@@ -746,6 +909,52 @@
             return div.innerHTML;
         }
 
+        // Lightweight markdown renderer for AI replies: code blocks, inline code,
+        // bold, italic, links, and line breaks. Input is escaped first so no
+        // raw HTML from the model or the user can execute.
+        function renderMarkdown(text) {
+            let html = escapeHtml(text);
+
+            // fenced code blocks ```...```
+            html = html.replace(/```([\s\S]*?)```/g, (m, code) => `<pre><code>${code.trim()}</code></pre>`);
+            // inline code `...`
+            html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+            // bold **...**
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            // italic *...*
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            // links [label](https://...)
+            html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            // line breaks (skip inside <pre> blocks, which already keep their own formatting)
+            html = html.replace(/\n/g, (match, offset, str) => {
+                const before = str.slice(0, offset);
+                const openPre = (before.match(/<pre>/g) || []).length;
+                const closePre = (before.match(/<\/pre>/g) || []).length;
+                return openPre > closePre ? '\n' : '<br>';
+            });
+
+            return html;
+        }
+
+        const newChatBtn = document.getElementById('newChatBtn');
+        const suggestedChips = document.getElementById('suggestedChips');
+        const welcomeMessageHTML = messagesContainer.innerHTML;
+
+        newChatBtn.addEventListener('click', function() {
+            localStorage.removeItem('conversation_id');
+            messagesContainer.innerHTML = welcomeMessageHTML;
+            suggestedChips.style.display = 'flex';
+            messageInput.focus();
+            showNotification('Started a new conversation', 'info');
+        });
+
+        suggestedChips.querySelectorAll('.chip-btn').forEach(function(chip) {
+            chip.addEventListener('click', function() {
+                messageInput.value = chip.textContent;
+                sendMessage();
+            });
+        });
+
         async function init() {
             await checkHealth();
             messageInput.focus();
@@ -809,7 +1018,9 @@
             
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            contentDiv.innerHTML = isUser
+                ? escapeHtml(content).replace(/\n/g, '<br>')
+                : renderMarkdown(content);
             
             if (citations && citations.length > 0) {
                 const citationsDiv = document.createElement('div');
@@ -858,6 +1069,54 @@
                 contentDiv.appendChild(debugDiv);
             }
             
+            if (!isUser) {
+                const actions = document.createElement('div');
+                actions.className = 'message-actions';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'message-action-btn';
+                copyBtn.type = 'button';
+                copyBtn.title = 'Copy';
+                copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                copyBtn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(content).then(function() {
+                        showNotification('Copied to clipboard', 'success');
+                    }).catch(function() {
+                        showNotification('Could not copy text', 'error');
+                    });
+                });
+
+                const upBtn = document.createElement('button');
+                upBtn.className = 'message-action-btn';
+                upBtn.type = 'button';
+                upBtn.title = 'Good response';
+                upBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>';
+
+                const downBtn = document.createElement('button');
+                downBtn.className = 'message-action-btn';
+                downBtn.type = 'button';
+                downBtn.title = 'Poor response';
+                downBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>';
+
+                // Feedback is recorded locally in the UI only; wire this up to a
+                // backend endpoint if you want it persisted server-side.
+                upBtn.addEventListener('click', function() {
+                    upBtn.classList.add('active-up');
+                    downBtn.classList.remove('active-down');
+                    showNotification('Thanks for the feedback', 'success');
+                });
+                downBtn.addEventListener('click', function() {
+                    downBtn.classList.add('active-down');
+                    upBtn.classList.remove('active-up');
+                    showNotification('Thanks for the feedback', 'info');
+                });
+
+                actions.appendChild(copyBtn);
+                actions.appendChild(upBtn);
+                actions.appendChild(downBtn);
+                contentDiv.appendChild(actions);
+            }
+
             if (isUser) {
                 messageDiv.appendChild(contentDiv);
                 messageDiv.appendChild(avatar);
@@ -887,6 +1146,7 @@
             addMessage(message, true);
             messageInput.value = '';
             sendBtn.disabled = true;
+            suggestedChips.style.display = 'none';
             showTyping();
 
             try {
