@@ -268,7 +268,11 @@ Answer using the context and previous conversation.
 
                     temperature=settings.temperature,
 
-                    max_tokens=1000
+                    max_tokens=1000,
+
+                    frequency_penalty=0.5,
+
+                    presence_penalty=0.3
                 )
 
 
